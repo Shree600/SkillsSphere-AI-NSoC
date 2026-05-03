@@ -18,6 +18,8 @@ import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage
 import CreateJobPostingPage from "../modules/recruiter-jobs/pages/CreateJobPostingPage";
 import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
 import ProtectedRoute from "../shared/components/ProtectedRoute";
+import PublicRoute from "";
+import NotFound from "";
 
 function App() {
   const dispatch = useDispatch();
@@ -32,59 +34,47 @@ function App() {
   return (
     <div className="min-h-screen bg-[#020617] text-white">
       <Routes>
+
+        {/*  Public */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/job-matcher" element={<JobMatcherPage />} />
         {import.meta.env.DEV && <Route path="/demo" element={<ComponentDemo />} />}
-        <Route 
-          path="/resume-analyzer" 
-          element={
-            <ProtectedRoute>
-              <ResumeAnalyzerPage />
-            </ProtectedRoute>
-          } 
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+
+        {/*  Auth restricted */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+
+        {/*  Other public */}
         <Route path="/auth/callback" element={<OAuthCallback />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route
-          path="/recruiter/jobs"
-          element={
-            <ProtectedRoute requiredRole="recruiter">
-              <RecruiterJobsPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recruiter/jobs/new"
-          element={
-            <ProtectedRoute requiredRole="recruiter">
-              <CreateJobPostingPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/jobs"
-          element={
-            <ProtectedRoute>
-              <JobBoardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/profile" element={<ProfilePage />} />
+
+        {/*  Protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
+          <Route path="/jobs" element={<JobBoardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+
+        {/* Recruiter only */}
+        <Route element={<ProtectedRoute requiredRole="recruiter" />}>
+          <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
+          <Route path="/recruiter/jobs/new" element={<CreateJobPostingPage />} />
+        </Route>
+
+        {/*  404 */}
+        <Route path="*" element={<NotFound />} />
+
       </Routes>
-      <ChatWidget />
+
+      {/* Only show chat when logged in */}
+      {token && <ChatWidget />}
     </div>
   );
 }
+    
 
 export default App;
