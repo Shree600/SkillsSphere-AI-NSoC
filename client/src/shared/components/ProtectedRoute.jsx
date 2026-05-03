@@ -1,32 +1,79 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import PropTypes from 'prop-types';
+import React, { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchCurrentUser } from "../features/auth/authSlice";
 
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
-  const location = useLocation();
+// Pages
+import LandingPage from "../modules/landing/LandingPage";
+import DashboardPage from "../modules/dashboard/DashboardPage";
+import ResumeAnalyzerPage from "../modules/resume-analyzer/pages/ResumeAnalyzerPage";
+import JobMatcherPage from "../modules/job-matcher/pages/JobMatcherPage";
+import Login from "../modules/auth/Login";
+import Register from "../modules/auth/Register";
+import OAuthCallback from "../modules/auth/OAuthCallback";
+import ResetPassword from "../modules/auth/ResetPassword";
+import VerifyEmail from "../modules/auth/VerifyEmail";
+import ProfilePage from "../modules/profile/ProfilePage";
+import RecruiterJobsPage from "../modules/recruiter-jobs/pages/RecruiterJobsPage";
+import CreateJobPostingPage from "../modules/recruiter-jobs/pages/CreateJobPostingPage";
+import JobBoardPage from "../modules/student-jobs/pages/JobBoardPage";
+import ChatWidget from "../modules/ai-assistant/components/ChatWidget";
 
-  if (!isAuthenticated) {
-    // Redirect them to the /login page, but save the current location they were
-    // trying to go to when they were redirected. This allows us to send them
-    // along to that page after they login, which is a nicer user experience
-    // than dropping them off on the home page.
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
+// Routing
+import ProtectedRoute from "../shared/components/ProtectedRoute";
+import PublicRoute from "../shared/components/PublicRoute";
+import NotFound from "../shared/pages/NotFound";
 
-  if (requiredRole && user?.role !== requiredRole) {
-    // If a role is required but the user doesn't have it, redirect to dashboard
-    // or a specialized unauthorized page if one exists.
-    return <Navigate to="/dashboard" replace />;
-  }
+function App() {
+  const dispatch = useDispatch();
+  const { token, user } = useSelector((state) => state.auth);
 
-  return children;
-};
+  useEffect(() => {
+    if (token && !user) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch, token, user]);
 
-ProtectedRoute.propTypes = {
-  children: PropTypes.node.isRequired,
-  requiredRole: PropTypes.string,
-};
+  return (
+    <div className="min-h-screen bg-[#020617] text-white">
+      <Routes>
+        {/*  Public Routes */}
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/job-matcher" element={<JobMatcherPage />} />
 
-export default ProtectedRoute;
+        {/*  Auth Routes (blocked if already logged in) */}
+        <Route element={<PublicRoute />}>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+        </Route>
+
+        {/*  Other Public */}
+        <Route path="/auth/callback" element={<OAuthCallback />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
+        {/*  Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/resume-analyzer" element={<ResumeAnalyzerPage />} />
+          <Route path="/jobs" element={<JobBoardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+        </Route>
+
+        {/* Recruiter Only */}
+        <Route element={<ProtectedRoute requiredRole="recruiter" />}>
+          <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
+          <Route path="/recruiter/jobs/new" element={<CreateJobPostingPage />} />
+        </Route>
+
+        {/*  404 */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+
+      {/* Chat only for logged-in users */}
+      {token && <ChatWidget />}
+    </div>
+  );
+}
+
+export default App;
